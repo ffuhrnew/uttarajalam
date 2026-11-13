@@ -1,8 +1,6 @@
-// UttaraJālam Flasher: Logik der Seite.
-// Nutzt vendor/rnode.js (RNode, ROM, Utils), vendor/nrf52_dfu_flasher.js (Nrf52DfuFlasher) und zip.js
-// aus liamcottle/rnode-flasher (MIT).
+// Nutzt vendor/rnode.js (RNode, ROM, Utils), vendor/nrf52_dfu_flasher.js (Nrf52DfuFlasher),
+// vendor/esptool-js und zip.js aus liamcottle/rnode-flasher (MIT).
 
-// XIAO nRF52840: Produkt 0xEC, Modell 0xEE (868/915 MHz) oder 0xED (433 MHz).
 const BOARDS = {
   xiao_nrf52840: { kind: "nrf52", product: 0xEC, model: 0xEE, zip: "firmware/rnode_firmware_xiao_nrf52840.zip" },
   xiao_nrf52840_433: { kind: "nrf52", product: 0xEC, model: 0xED, zip: "firmware/rnode_firmware_xiao_nrf52840.zip" },
@@ -12,6 +10,19 @@ const $ = (id) => document.getElementById(id);
 const logEl = $("log");
 const progressEl = $("progress");
 let busy = false;
+let btSession = null;   // offene USB-Verbindung zum Board, solange die Bluetooth-Karte benutzt wird
+let btTimer = null;
+const BT_PIN_WAIT_MS = 5000;      // so lange wartet die Seite auf den PIN
+const BT_PAIRING_WINDOW_S = 35;   // BT_PAIRING_TIMEOUT der Firmware (Bluetooth.h)
+
+function updateButtons() {
+  document.querySelectorAll("button").forEach((b) => {
+    let off = false;
+    if (b.id === "btn-bt-close") off = !btSession;
+    else if (!b.id.startsWith("btn-bt-")) off = !!btSession;   // Flashen und Einrichten brauchen denselben Port
+    b.disabled = busy || off;
+  });
+}
 
 function log(text, cls) {
   const line = document.createElement("div");
@@ -30,7 +41,7 @@ const mode = () => document.querySelector('input[name="mode"]:checked').value;
 
 function setBusy(on) {
   busy = on;
-  document.querySelectorAll("button").forEach((b) => (b.disabled = on));
+  updateButtons();
 }
 
 // Jede Aktion läuft über run(): ein Vorgang gleichzeitig, Fehler landen im Protokoll.
@@ -77,6 +88,7 @@ function toBinaryString(bytes) {
 
 // ---- Flashen ---------------------------------------------------------------
 
+// esptool-js schreibt die Verbindungsversuche zeichenweise (".", "_"). Das fassen wir zu einer Zeile zusammen.
 // Versetzt das Board per Software in den Update-Modus (Port kurz mit 1200 Baud öffnen und schließen)
 // und liefert den Port, über den geflasht wird. Im Update-Modus meldet sich das Board unter einer anderen
 // USB-Kennung. Hat der Browser diese Kennung noch nie gesehen, darf die Seite sie nur nach einer neuen Auswahl
@@ -157,6 +169,97 @@ async function openRNodeNrf(port) {
 async function openRNode(port) {
   port = port || await pickPort();
   return openRNodeNrf(port);
+}
+
+// ---- Bluetooth -------------------------------------------------------------
+// Die Firmware erzeugt den PIN beim Befehl "Pairing starten" (nicht erst, wenn das Smartphone fragt) und hält das
+// Pairing-Fenster 35 Sekunden offen. Die USB-Verbindung bleibt offen, bis sie getrennt wird.
+
+const btStatus = (text) => { $("bt-status").textContent = text; };
+
+function btHidePin() {
+  clearInterval(btTimer);
+  $("bt-pin-wrap").classList.add("hidden");
+  $("bt-pin").textContent = "------";
+}
+
+function btOnDisconnect(e) {
+  if (!btSession || e.target !== btSession.serialPort) return;
+  const rnode = btSession;
+  btEnd("Verbindung zum Board verloren.");
+  btClose(rnode);   // Leser und Port freigeben, sonst bleibt der alte Port belegt
+}
+
+function btEnd(text) {
+  btSession = null;
+  navigator.serial.removeEventListener("disconnect", btOnDisconnect);
+  btHidePin();
+  btStatus(text);
+  updateButtons();
+}
+
+async function btOpen() {
+  if (btSession) return btSession;
+  const port = await pickPort();   // zuerst, solange die Klick-Erlaubnis gilt
+  btSession = await openRNode(port);
+  navigator.serial.addEventListener("disconnect", btOnDisconnect);
+  updateButtons();
+  return btSession;
+}
+
+async function btClose(rnode) {
+  delete rnode.callbacks[rnode.CMD_BT_PIN];
+  await closeQuiet(rnode);
+}
+
+async function bluetoothPair() {
+  const rnode = await btOpen();
+  btHidePin();
+  btStatus("Starte Pairing …");
+  let gotPin;
+  const pinPromise = new Promise((resolve) => { gotPin = resolve; });
+  await rnode.startBluetoothPairing(gotPin);
+  let pin;
+  try {
+    pin = await withTimeout(pinPromise, BT_PIN_WAIT_MS,
+      "Das Board hat keinen PIN gemeldet. Ist schon ein Smartphone verbunden? Dort die Verbindung trennen und noch einmal starten.");
+  } catch (e) {
+    delete rnode.callbacks[rnode.CMD_BT_PIN];
+    btStatus("Kein PIN empfangen.");
+    throw e;
+  }
+  $("bt-pin").textContent = String(pin).padStart(6, "0");
+  $("bt-pin-wrap").classList.remove("hidden");
+  log("Bluetooth-Pairing-PIN: " + pin, "ok");
+  let left = BT_PAIRING_WINDOW_S;
+  const tick = () => {
+    if (left <= 0) {
+      btHidePin();
+      btStatus("Pairing-Fenster abgelaufen. Mit „Pairing starten“ einen neuen PIN holen.");
+      return;
+    }
+    btStatus("PIN am Smartphone eingeben, das Pairing-Fenster ist noch " + left + " s offen.");
+    left--;
+  };
+  tick();
+  btTimer = setInterval(tick, 1000);
+}
+
+async function bluetoothClose() {
+  if (!btSession) return;
+  await btClose(btSession);
+  btEnd("Verbindung getrennt. Bluetooth am Board bleibt eingeschaltet.");
+}
+
+async function bluetoothOff() {
+  const rnode = await btOpen();
+  try {
+    await rnode.disableBluetooth();
+    await sleep(300);
+  } finally {
+    await btClose(rnode);
+    btEnd("Bluetooth ausgeschaltet (gespeichert). Vollständig aus ist es spätestens nach dem nächsten Neustart des Boards.");
+  }
 }
 
 async function wipeEeprom() {
@@ -331,5 +434,9 @@ if (!("serial" in navigator)) {
   $("btn-provision").onclick = () => run("EEPROM einrichten", provisionEeprom);
   $("btn-hash").onclick = () => run("Firmware-Hash setzen", setFirmwareHash);
   $("btn-inspect").onclick = () => run("Status prüfen", inspectNode);
+  $("btn-bt-pair").onclick = () => run("Bluetooth-Pairing starten", bluetoothPair);
+  $("btn-bt-close").onclick = () => run("Bluetooth-Verbindung trennen", bluetoothClose);
+  $("btn-bt-off").onclick = () => run("Bluetooth ausschalten", bluetoothOff);
+  updateButtons();
 }
 loadManifest();

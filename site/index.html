@@ -53,6 +53,7 @@
   code { font: .9em ui-monospace, SFMono-Regular, Menlo, monospace; }
   a { color: var(--accent); }
   .links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .pin { font: 700 2.5rem ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .15em; margin-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -109,6 +110,22 @@
   </div>
 
   <div class="card">
+    <h2>4. Bluetooth-Pairing</h2>
+    <p>„Pairing starten“ startet das Bluetooth-Pairing und zeigt den PIN. Das Board erzeugt ihn sofort und hält das Pairing 35 Sekunden offen. In dieser Zeit am Smartphone das Board suchen und den PIN eingeben. Solange die Verbindung offen ist, sind Flashen und Einrichten gesperrt.</p>
+    <div class="row">
+      <button id="btn-bt-pair">Pairing starten</button>
+      <button id="btn-bt-close" class="secondary">Verbindung trennen</button>
+      <button id="btn-bt-off" class="secondary">Bluetooth ausschalten</button>
+    </div>
+    <p id="bt-status" class="meta">Pairing nicht gestartet.</p>
+    <div id="bt-pin-wrap" class="hidden">
+      <p>Pairing-PIN:</p>
+      <div id="bt-pin" class="pin">------</div>
+    </div>
+    <p class="meta">„Verbindung trennen“ lässt Bluetooth am Board eingeschaltet. „Bluetooth ausschalten“ speichert die Abschaltung im Board.</p>
+  </div>
+
+  <div class="card">
     <h2>Protokoll</h2>
     <pre id="log">Bereit.</pre>
   </div>
@@ -121,8 +138,8 @@
                   <a href="https://github.com/ffuhrnew/uttarajalam/issues">Fehler melden</a>
     </div>
     <p class="meta" style="margin-top:12px">GPL-3.0. Der Flasher benutzt Code von
-      <a href="https://github.com/liamcottle/rnode-flasher">liamcottle/rnode-flasher</a> (MIT),
-      siehe <a href="vendor/THIRD-PARTY.md">THIRD-PARTY.md</a>.
+      <a href="https://github.com/liamcottle/rnode-flasher">liamcottle/rnode-flasher</a> (MIT) und
+      <a href="https://github.com/espressif/esptool-js">esptool-js</a>, siehe <a href="vendor/THIRD-PARTY.md">THIRD-PARTY.md</a>.
       Die Firmware wird bei jedem Stand von <code>main</code> automatisch gebaut. Flashen geschieht auf eigene Gefahr.</p>
   </div>
 </main>
