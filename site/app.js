@@ -358,14 +358,6 @@ async function inspectNode() {
 
 // ---- Oberfläche -----------------------------------------------------------
 
-function updateView() {
-  const b = board();
-  $("steps-esp32").classList.toggle("hidden", b.kind !== "esp32");
-  $("steps-nrf").classList.toggle("hidden", b.kind !== "nrf52");
-  $("btn-uf2").classList.toggle("hidden", !b.uf2);
-  $("uf2hint").classList.toggle("hidden", !b.uf2);
-}
-
 async function loadManifest() {
   try {
     const m = await (await fetch("firmware/manifest.json", { cache: "no-cache" })).json();
@@ -385,6 +377,4 @@ if (!("serial" in navigator)) {
   $("btn-hash").onclick = () => run("Firmware-Hash setzen", setFirmwareHash);
   $("btn-inspect").onclick = () => run("Status prüfen", inspectNode);
 }
-document.querySelectorAll('input[name="board"]').forEach((r) => r.addEventListener("change", updateView));
-updateView();
 loadManifest();
