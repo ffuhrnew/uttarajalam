@@ -159,7 +159,9 @@ async function openRNodeNrf(port) {
       if (rom && rom.length >= 0x9c) return rnode;
       await sleep(500);
     }
-    throw new Error("Das gewählte Gerät meldet sich nicht als RNode.");
+    throw new Error("Das gewählte Gerät meldet sich nicht als RNode. Ist ein Smartphone oder Computer per Bluetooth mit dem Board verbunden? " +
+      "Dann antwortet das Board nur dort und nicht über USB. Bluetooth am Smartphone ausschalten (oder das Board dort vergessen), " +
+      "das Board neu anstecken und noch einmal versuchen.");
   } catch (e) {
     await closeQuiet(rnode);
     throw e;
