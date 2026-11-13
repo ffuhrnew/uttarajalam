@@ -53,7 +53,6 @@
   code { font: .9em ui-monospace, SFMono-Regular, Menlo, monospace; }
   a { color: var(--accent); }
   .links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
-  .pin { font: 700 2.5rem ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .15em; margin-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -107,22 +106,6 @@
       <button id="btn-inspect" class="secondary">Status prüfen</button>
     </div>
     <p class="meta">Das Leeren dauert bis zu 30 Sekunden. Eine Gerätesignatur wird hier nicht erzeugt (wie im rnode-flasher), <code>rnodeconf</code> kann sie deshalb als nicht bestätigt melden.</p>
-  </div>
-
-  <div class="card">
-    <h2>4. Bluetooth-Pairing</h2>
-    <p>„Pairing starten“ startet das Bluetooth-Pairing und zeigt den PIN. Das Board erzeugt ihn sofort und hält das Pairing 35 Sekunden offen. In dieser Zeit am Smartphone das Board suchen und den PIN eingeben. Solange die Verbindung offen ist, sind Flashen und Einrichten gesperrt.</p>
-    <div class="row">
-      <button id="btn-bt-pair">Pairing starten</button>
-      <button id="btn-bt-close" class="secondary">Verbindung trennen</button>
-      <button id="btn-bt-off" class="secondary">Bluetooth ausschalten</button>
-    </div>
-    <p id="bt-status" class="meta">Pairing nicht gestartet.</p>
-    <div id="bt-pin-wrap" class="hidden">
-      <p>Pairing-PIN:</p>
-      <div id="bt-pin" class="pin">------</div>
-    </div>
-    <p class="meta">„Verbindung trennen“ lässt Bluetooth am Board eingeschaltet. „Bluetooth ausschalten“ speichert die Abschaltung im Board.</p>
   </div>
 
   <div class="card">
