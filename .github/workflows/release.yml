@@ -1,9 +1,5 @@
 name: build-and-release
 
-# Push to main / pull request: build only (CI check).
-# Push of a tag equal to the firmware version in Config.h (e.g. 1.75): build + GitHub release.
-# rnodeconf reads {fw-url}latest/download/release.json and
-# {fw-url}download/<version>/<zip>, so the tag MUST be the plain version string.
 on:
   push:
     branches: [main]
@@ -14,11 +10,17 @@ on:
 permissions:
   contents: write
 
+defaults:
+  run:
+    working-directory: RNode_Firmware_CE
+
 jobs:
   xiao-nrf52840:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: RNode_Firmware_CE
 
       - uses: arduino/setup-arduino-cli@v2
 
@@ -50,13 +52,13 @@ jobs:
         with:
           name: rnode_firmware_xiao_nrf52840
           path: |
-            Release/rnode_firmware_xiao_nrf52840.zip
-            Release/release.json
+            RNode_Firmware_CE/Release/rnode_firmware_xiao_nrf52840.zip
+            RNode_Firmware_CE/Release/release.json
 
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            Release/rnode_firmware_xiao_nrf52840.zip
-            Release/release.json
+            RNode_Firmware_CE/Release/rnode_firmware_xiao_nrf52840.zip
+            RNode_Firmware_CE/Release/release.json

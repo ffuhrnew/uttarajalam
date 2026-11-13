@@ -1,0 +1,58 @@
+name: deploy-web-flasher
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: RNode_Firmware_CE
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: RNode_Firmware_CE
+
+      - uses: arduino/setup-arduino-cli@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install nRF52 toolchain and libraries
+        run: |
+          pip install adafruit-nrfutil
+          make prep-index
+          make prep-xiao_nrf52840
+
+      - name: Build DFU package and prepare site
+        run: |
+          make release-xiao_nrf52840
+          mkdir -p site/firmware
+          cp Release/rnode_firmware_xiao_nrf52840.zip site/firmware/
+          python3 -c 'import json,subprocess,datetime; print(json.dumps({"version":"1.75","commit":subprocess.check_output(["git","rev-parse","HEAD"]).decode().strip(),"built":datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}))' > site/firmware/manifest.json
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: RNode_Firmware_CE/site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
