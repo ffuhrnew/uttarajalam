@@ -179,13 +179,13 @@ class RNode {
                     break;
                 }
 
-                // anujalaka: Rohdaten für die Fehlersuche weitergeben
+                // UttaraJālam: Rohdaten für die Fehlersuche weitergeben
                 if(RNode.rawTap){
                     try { RNode.rawTap(value); } catch(_) {}
                 }
 
                 // read kiss frames
-                // anujalaka: FEND trennt Rahmen, ohne mitzuzählen. Das Original schaltet bei jedem FEND um
+                // UttaraJālam: FEND trennt Rahmen, ohne mitzuzählen. Das Original schaltet bei jedem FEND um
                 // (Anfang/Ende); beginnt der Empfang mitten in einem Rahmen, bleibt es dauerhaft verdreht
                 // und erkennt keine Antwort mehr.
                 for(const byte of value){

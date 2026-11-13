@@ -1,5 +1,5 @@
-// Nutzt vendor/rnode.js (RNode, ROM, Utils), vendor/nrf52_dfu_flasher.js (Nrf52DfuFlasher),
-// vendor/esptool-js und zip.js aus liamcottle/rnode-flasher (MIT).
+// Nutzt vendor/rnode.js (RNode, ROM, Utils), vendor/nrf52_dfu_flasher.js (Nrf52DfuFlasher) und zip.js
+// aus liamcottle/rnode-flasher (MIT).
 
 const BOARDS = {
   xiao_nrf52840: { kind: "nrf52", product: 0xEC, model: 0xEE, zip: "firmware/rnode_firmware_xiao_nrf52840.zip" },
@@ -88,7 +88,6 @@ function toBinaryString(bytes) {
 
 // ---- Flashen ---------------------------------------------------------------
 
-// esptool-js schreibt die Verbindungsversuche zeichenweise (".", "_"). Das fassen wir zu einer Zeile zusammen.
 // Versetzt das Board per Software in den Update-Modus (Port kurz mit 1200 Baud öffnen und schließen)
 // und liefert den Port, über den geflasht wird. Im Update-Modus meldet sich das Board unter einer anderen
 // USB-Kennung. Hat der Browser diese Kennung noch nie gesehen, darf die Seite sie nur nach einer neuen Auswahl

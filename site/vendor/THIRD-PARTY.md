@@ -1,7 +1,8 @@
 # Third-party code in this folder
 
-Copied unmodified from https://github.com/liamcottle/rnode-flasher (MIT, Copyright (c) 2024 Liam Cottle,
-see `LICENSE-rnode-flasher.txt`):
+Taken from https://github.com/liamcottle/rnode-flasher (MIT, Copyright (c) 2024 Liam Cottle,
+see `LICENSE-rnode-flasher.txt`). Only `rnode.js` was changed (two spots, marked `UttaraJālam:` in the code);
+the other files are unmodified:
 
 - `rnode.js` (RNode KISS protocol and EEPROM handling; hook `RNode.rawTap` for diagnostics; frame parser resyncs on every FEND)
 - `nrf52_dfu_flasher.js` (Web Serial port of `adafruit-nrfutil dfu serial`)
