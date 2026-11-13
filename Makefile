@@ -51,6 +51,7 @@ prep-nrf:
 	arduino-cli core install adafruit:nrf52 --config-file arduino-cli.yaml
 	arduino-cli core install rakwireless:nrf52 --config-file arduino-cli.yaml
 	arduino-cli core install Heltec_nRF52:Heltec_nRF52 --config-file arduino-cli.yaml
+	arduino-cli core install Seeeduino:nrf52 --config-file arduino-cli.yaml
 	arduino-cli lib install "Crypto"
 	arduino-cli lib install "Adafruit GFX Library"
 	arduino-cli lib install "GxEPD2"
@@ -154,6 +155,9 @@ firmware-opencom-xl:
 
 firmware-heltec_t114:
 	arduino-cli compile --log --fqbn Heltec_nRF52:Heltec_nRF52:HT-n5262 -e --build-property "build.partitions=no_ota" --build-property "upload.maximum_size=2097152" --build-property "compiler.cpp.extra_flags=\"-DBOARD_MODEL=0x3C\""
+
+firmware-xiao_nrf52840:
+	arduino-cli compile --fqbn Seeeduino:nrf52:xiaonRF52840 $(VFLAG) -e --build-property "compiler.cpp.extra_flags=\"-DBOARD_MODEL=0x53\""
 
 firmware-heltec_t114_gps:
 	arduino-cli compile --log --fqbn Heltec_nRF52:Heltec_nRF52:HT-n5262 -e --build-property "build.partitions=no_ota" --build-property "upload.maximum_size=2097152" --build-property "compiler.cpp.extra_flags=\"-DBOARD_MODEL=0x3C\" \"-DBOARD_VARIANT=0xCB\""
@@ -272,6 +276,11 @@ upload-heltec_t114:
 	arduino-cli upload -p /dev/ttyACM0 --fqbn Heltec_nRF52:Heltec_nRF52:HT-n5262
 	@sleep 1
 	rnodeconf /dev/ttyACM0 --firmware-hash $$(./partition_hashes from_device /dev/ttyACM0)
+
+upload-xiao_nrf52840:
+	arduino-cli upload -p $(or $(port), /dev/ttyACM0) --fqbn Seeeduino:nrf52:xiaonRF52840
+	@sleep 3
+	rnodeconf $(or $(port), /dev/ttyACM0) --firmware-hash $$(./partition_hashes from_device $(or $(port), /dev/ttyACM0))
 
 upload-techo:
 	arduino-cli upload -p /dev/ttyACM0 --fqbn adafruit:nrf52:pca10056
@@ -527,4 +536,10 @@ release-heltec_t114:
 	arduino-cli compile --fqbn Heltec_nRF52:Heltec_nRF52:HT-n5262 $(COMMON_BUILD_FLAGS) --build-property "compiler.cpp.extra_flags=\"-DBOARD_MODEL=0x3C\""
 	cp build/Heltec_nRF52.Heltec_nRF52.HT-n5262/RNode_Firmware_CE.ino.hex build/rnode_firmware_heltec_t114.hex
 	adafruit-nrfutil dfu genpkg --dev-type 0x0052 --application build/rnode_firmware_heltec_t114.hex Release/rnode_firmware_heltec_t114.zip
+	rm -r build
+
+release-xiao_nrf52840:
+	arduino-cli compile --fqbn Seeeduino:nrf52:xiaonRF52840 $(VFLAG) -e --build-property "compiler.cpp.extra_flags=\"-DBOARD_MODEL=0x53\""
+	cp build/Seeeduino.nrf52.xiaonRF52840/RNode_Firmware_CE.ino.hex build/rnode_firmware_xiao_nrf52840.hex
+	adafruit-nrfutil dfu genpkg --dev-type 0x0052 --application build/rnode_firmware_xiao_nrf52840.hex Release/rnode_firmware_xiao_nrf52840.zip
 	rm -r build

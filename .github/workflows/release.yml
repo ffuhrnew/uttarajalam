@@ -1,0 +1,62 @@
+name: build-and-release
+
+# Push to main / pull request: build only (CI check).
+# Push of a tag equal to the firmware version in Config.h (e.g. 1.75): build + GitHub release.
+# rnodeconf reads {fw-url}latest/download/release.json and
+# {fw-url}download/<version>/<zip>, so the tag MUST be the plain version string.
+on:
+  push:
+    branches: [main]
+    tags: ['[0-9]*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  xiao-nrf52840:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: arduino/setup-arduino-cli@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install nRF52 toolchain and libraries
+        run: |
+          pip install adafruit-nrfutil
+          make prep-index
+          make prep-nrf
+
+      - name: Build DFU package
+        run: make release-xiao_nrf52840
+
+      - name: Create release.json
+        run: python3 release_hashes.py > Release/release.json
+
+      - name: Check tag matches firmware version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          v=$(python3 -c "import json;print(next(iter(json.load(open('Release/release.json')).values()))['version'])")
+          if [ "$v" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match firmware version $v from Config.h"; exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rnode_firmware_xiao_nrf52840
+          path: |
+            Release/rnode_firmware_xiao_nrf52840.zip
+            Release/release.json
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            Release/rnode_firmware_xiao_nrf52840.zip
+            Release/release.json
