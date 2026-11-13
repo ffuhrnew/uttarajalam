@@ -1,13 +1,11 @@
-// Aṇujālaka Flasher: Logik der Seite.
-// Nutzt vendor/rnode.js (RNode, ROM, Utils), vendor/nrf52_dfu_flasher.js (Nrf52DfuFlasher),
-// vendor/esptool-js und zip.js aus liamcottle/rnode-flasher (MIT).
+// UttaraJālam Flasher: Logik der Seite.
+// Nutzt vendor/rnode.js (RNode, ROM, Utils), vendor/nrf52_dfu_flasher.js (Nrf52DfuFlasher) und zip.js
+// aus liamcottle/rnode-flasher (MIT).
 
-// Werte wie in flash-node.sh: RAK4631 und XIAO nRF52840 werden als RAK4631 eingetragen (Produkt 0x10, Modell 0x12),
-// der XIAO ESP32-S3 als Produkt 0xEB, Modell 0xDD.
+// XIAO nRF52840: Produkt 0xEC, Modell 0xEE (868/915 MHz) oder 0xED (433 MHz).
 const BOARDS = {
   xiao_nrf52840: { kind: "nrf52", product: 0xEC, model: 0xEE, zip: "firmware/rnode_firmware_xiao_nrf52840.zip" },
   xiao_nrf52840_433: { kind: "nrf52", product: 0xEC, model: 0xED, zip: "firmware/rnode_firmware_xiao_nrf52840.zip" },
-  rak4631:       { kind: "nrf52", product: 0x10, model: 0x12, zip: "firmware/rak4631.zip" },
 };
 
 const $ = (id) => document.getElementById(id);
@@ -79,7 +77,6 @@ function toBinaryString(bytes) {
 
 // ---- Flashen ---------------------------------------------------------------
 
-// esptool-js schreibt die Verbindungsversuche zeichenweise (".", "_"). Das fassen wir zu einer Zeile zusammen.
 // Versetzt das Board per Software in den Update-Modus (Port kurz mit 1200 Baud öffnen und schließen)
 // und liefert den Port, über den geflasht wird. Im Update-Modus meldet sich das Board unter einer anderen
 // USB-Kennung. Hat der Browser diese Kennung noch nie gesehen, darf die Seite sie nur nach einer neuen Auswahl
@@ -138,7 +135,7 @@ const withTimeout = (promise, ms, msg) =>
   Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), ms))]);
 const closeQuiet = (rnode) => withTimeout(rnode.close(), 3000, "close").catch(() => {});
 
-// nRF52 (RAK4631, XIAO nRF52840): eigener Weg. Die Firmware sendet über USB nur, solange DTR gesetzt ist.
+// XIAO nRF52840: eigener nRF52-Weg. Die Firmware sendet über USB nur, solange DTR gesetzt ist.
 async function openRNodeNrf(port) {
   const rnode = await withTimeout(RNode.fromSerialPort(port), 8000, "Der Port lässt sich nicht öffnen.");
   await port.setSignals({ dataTerminalReady: true, requestToSend: false }).catch(() => {});
@@ -160,48 +157,6 @@ async function openRNodeNrf(port) {
 async function openRNode(port) {
   port = port || await pickPort();
   return openRNodeNrf(port);
-  // Rohdaten mitschreiben: Die Firmware gibt beim Start Textzeilen aus, die zeigen, wo sie gerade steht.
-  let raw = [], rawCount = 0;
-  RNode.rawTap = (chunk) => { rawCount += chunk.length; raw.push(...chunk); if (raw.length > 4000) raw = raw.slice(-4000); };
-  const rnode = await withTimeout(RNode.fromSerialPort(port), 8000, "Der Port lässt sich nicht öffnen.");
-  // Der Browser setzt beim Öffnen DTR und RTS. Auf dem ESP32-S3 (USB-Serial-JTAG) führt das beim nächsten Neustart
-  // in den Download-Modus: das Board schweigt dann, die Firmware läuft nicht. Deshalb gleich beide loslassen.
-  const setLines = (dtr, rts) => port.setSignals({ dataTerminalReady: dtr, requestToSend: rts }).catch(() => {});
-  await setLines(false, false);
-  try {
-    // Beim ersten Start nach dem Flashen formatiert der Node seinen Speicher und legt eine Identität an.
-    // Das kann deutlich länger dauern als ein normaler Start, daher bis zu 20 Sekunden warten.
-    const start = Date.now();
-    let nextNote = 10000;
-    let resetTried = false;
-    while (Date.now() - start < 25000) {
-      if (await rnode.detect()) return rnode;
-      const rom = await Promise.race([rnode.getRom().catch(() => null), sleep(1500).then(() => null)]);
-      if (rom && rom.length >= 0x9c) return rnode;
-      if (!resetTried && Date.now() - start >= 6000) {
-        // Keine Antwort: vermutlich steckt der Chip im Download-Modus. Einmal sauber in die Firmware neu starten.
-        resetTried = true;
-        log("Keine Antwort, starte den Node einmal neu …");
-        await setLines(false, true);
-        await sleep(200);
-        await setLines(false, false);
-        await sleep(1500);
-      }
-      if (Date.now() - start >= nextNote) {
-        log("Warte auf den Node … " + Math.round((Date.now() - start) / 1000) + " s, " + rawCount + " Bytes empfangen");
-        nextNote += 10000;
-      }
-      await sleep(500);
-    }
-    const text = new TextDecoder().decode(new Uint8Array(raw)).replace(/[^\x20-\x7e\r\n]/g, "·").trim();
-    log("Empfangen vom Board (" + rawCount + " Bytes, letzte Ausgabe):\n" + (text.slice(-800) || "(nichts)"));
-    throw new Error("Das gewählte Gerät meldet sich nicht als RNode.");
-  } catch (e) {
-    await closeQuiet(rnode);
-    throw e;
-  } finally {
-    RNode.rawTap = null;
-  }
 }
 
 async function wipeEeprom() {
