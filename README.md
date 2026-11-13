@@ -17,7 +17,7 @@ RNode modem firmware for the **Seeed XIAO nRF52840 + Wio-SX1262** kit, installab
 
 ## Build
 
-    make prep-index prep-nrf
+    make prep-index prep-xiao_nrf52840
     make release-xiao_nrf52840      # writes Release/rnode_firmware_xiao_nrf52840.zip (DFU package)
     python3 release_hashes.py > Release/release.json
 

@@ -61,6 +61,17 @@ prep-nrf:
 	pip install pyserial rns --upgrade --user --break-system-packages # This looks scary, but it's actually just telling pip to install packages as a user instead of trying to install them systemwide, which bypasses the "externally managed environment" error.
 	pip install adafruit-nrfutil --upgrade --user --break-system-packages # This looks scary, but it's actually just telling pip to install packages as a user instead of trying to install them systemwide, which bypasses the "externally managed environment" error.
 
+# Only what the XIAO nRF52840 build needs (the RAK core is not available on ARM hosts such as a Raspberry Pi)
+prep-xiao_nrf52840:
+	arduino-cli core install Seeeduino:nrf52 --config-file arduino-cli.yaml
+	arduino-cli lib install "Crypto"
+	arduino-cli lib install "Adafruit GFX Library"
+	arduino-cli lib install "GxEPD2"
+	arduino-cli lib install "TinyGPSPlus"
+	arduino-cli config set library.enable_unsafe_install true
+	arduino-cli lib install --git-url https://github.com/liamcottle/esp8266-oled-ssd1306#e16cee124fe26490cb14880c679321ad8ac89c95
+	pip install pyserial adafruit-nrfutil --upgrade --user --break-system-packages
+
 console-site:
 	make -C Console clean site
 

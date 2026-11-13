@@ -30,7 +30,7 @@ jobs:
         run: |
           pip install adafruit-nrfutil
           make prep-index
-          make prep-nrf
+          make prep-xiao_nrf52840
 
       - name: Build DFU package
         run: make release-xiao_nrf52840
