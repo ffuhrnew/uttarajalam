@@ -118,6 +118,11 @@
   #define MODEL_C7            0xC7 // Heltec Mesh Node T114, 863-928 MHz
   #define MODEL_CB            0xCB // Heltec Mesh Node T114, 863-928 MHz + GPS
 
+  #define PRODUCT_XIAO_NRF52840 0xEC // Seeed XIAO nRF52840 + Wio-SX1262 (UttaraJalam)
+  #define BOARD_XIAO_NRF52840   0x53
+  #define MODEL_ED              0xED // XIAO nRF52840 + Wio-SX1262, 433 MHz (410-525 MHz)
+  #define MODEL_EE              0xEE // XIAO nRF52840 + Wio-SX1262, 868/915 MHz (850-950 MHz)
+
   #define PRODUCT_TECHO       0x15 // LilyGO T-Echo devices
   #define BOARD_TECHO         0x44
   #define MODEL_16            0x16 // T-Echo 433 MHz
@@ -1388,8 +1393,63 @@
       #define HAS_GPS true
       #define GPS_BAUD_RATE 9600
       #define PIN_GPS_RX 37
-      #define PIN_GPS_TX 39 
+      #define PIN_GPS_TX 39
       #endif
+    #elif BOARD_MODEL == BOARD_XIAO_NRF52840
+      // Seeed XIAO nRF52840 + Wio-SX1262 for XIAO (SKU 113010003 / kit 102010710)
+      // Pin numbers are Arduino pin numbers of the Seeed XIAO nRF52840 variant (D0..D10)
+      #define HAS_EEPROM false
+      #define HAS_DISPLAY false
+      #define HAS_BLUETOOTH false
+      #define HAS_BLE true
+      #define HAS_CONSOLE false
+      #define HAS_PMU false
+      #define HAS_NP false
+      #define HAS_SD false
+      #define HAS_TCXO true
+      #define HAS_BUSY true
+      #define HAS_INPUT false
+      #define HAS_SLEEP false
+      #define CONFIG_UART_BUFFER_SIZE 6144
+      #define CONFIG_QUEUE_SIZE 6144
+      #define CONFIG_QUEUE_MAX_LENGTH 200
+      #define EEPROM_SIZE 296
+      #define EEPROM_OFFSET EEPROM_SIZE-EEPROM_RESERVED
+      #define BLE_MANUFACTURER "Seeed"
+      #define BLE_MODEL "XIAO"
+
+      // On-board RGB LED, active low: red = 11, green = 13, blue = 12
+      #define LED_ON LOW
+      #define LED_OFF HIGH
+      const int pin_led_rx = 13;
+      const int pin_led_tx = 11;
+
+      #define INTERFACE_COUNT 1
+
+      const uint8_t interfaces[INTERFACE_COUNT] = {SX1262};
+      const bool interface_cfg[INTERFACE_COUNT][3] = {
+                    // SX1262
+          {
+              false, // DEFAULT_SPI
+              true, // HAS_TCXO
+              true  // DIO2_AS_RF_SWITCH
+          }
+      };
+      const int8_t interface_pins[INTERFACE_COUNT][10] = {
+                  // SX1262
+          {
+              4, // pin_ss    (D4)
+              8, // pin_sclk  (D8)
+              10, // pin_mosi (D10)
+              9, // pin_miso  (D9)
+              3, // pin_busy  (D3)
+              1, // pin_dio   (D1)
+              2, // pin_reset (D2)
+              -1, // pin_txen
+              5, // pin_rxen  (D5)
+              -1  // pin_tcxo_enable
+          }
+      };
     #else
       #error An unsupported nRF board was selected. Cannot compile RNode firmware.
     #endif
