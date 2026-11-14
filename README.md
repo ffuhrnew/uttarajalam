@@ -52,7 +52,7 @@ Der Flasher bietet zusätzlich das **Seeed XIAO ESP32-S3** mit Wio-SX1262 (Produ
 `0xC5` für 433 MHz) an. Die Firmware ist die unveränderte RNode_Firmware_CE (`make release-heltec32_v3`), der Flasher
 schreibt sie mit denselben Adressen wie `rnodeconf`. Beide Boards sind noch nicht auf Hardware getestet. Wird das Paket
 beim Bau nicht erzeugt, bietet die Seite das Board nicht an. Die Schritte danach (Hash, Status, Bluetooth) sind dieselben
-wie beim XIAO. Klappt die USB-Verbindung nicht von selbst, hilft es, die PRG/BOOT-Taste beim Anstecken gedrückt zu halten.
+wie beim XIAO. Der Flasher schaltet das Board selbst in den Update-Modus, ein Knopfdruck ist nicht vorgesehen.
 
 ## Selbst bauen
 
