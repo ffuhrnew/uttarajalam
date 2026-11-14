@@ -53,43 +53,52 @@
   code { font: .9em ui-monospace, SFMono-Regular, Menlo, monospace; }
   a { color: var(--accent); }
   .links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .lang { display: flex; gap: 6px; flex: none; }
+  .lang button { padding: 4px 10px; font-size: .9rem; background: transparent; color: var(--accent); }
+  .lang button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
   .pin { font: 700 2.5rem ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .15em; margin-bottom: 8px; }
 </style>
 </head>
 <body>
 <main>
-  <h1>UttaraJālam Flasher</h1>
-  <p class="sub">RNode Firmware CE für <strong>Seeed XIAO nRF52840 + Wio-SX1262</strong> direkt im Browser flashen und einrichten.</p>
+  <div class="top">
+    <h1>UttaraJālam Flasher</h1>
+    <div class="lang">
+      <button type="button" id="lang-de" data-lang="de" aria-pressed="true">DE</button>
+      <button type="button" id="lang-en" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+  <p class="sub" data-i18n-html="sub">RNode Firmware CE für <strong>Seeed XIAO nRF52840 + Wio-SX1262</strong> direkt im Browser flashen und einrichten.</p>
 
   <div id="nosupport" class="card warn hidden">
-    <strong>Dieser Browser kann nicht per USB flashen.</strong>
-    Bitte Chrome oder Edge am Computer verwenden (Web Serial). Firefox und Safari werden nicht unterstützt.
+    <span data-i18n-html="nosupport"><strong>Dieser Browser kann nicht per USB flashen.</strong> Bitte Chrome oder Edge am Computer verwenden (Web Serial). Firefox und Safari werden nicht unterstützt.</span>
   </div>
 
   <div class="card">
-    <h2>1. Board wählen</h2>
+    <h2 data-i18n="h.board">1. Board wählen</h2>
     <div class="choices" id="boards">
-      <label class="choice"><input type="radio" name="board" value="xiao_nrf52840" checked>XIAO nRF52840 (868 / 915 MHz)<small>Produkt 0xEC · Modell 0xEE</small></label>
-      <label class="choice"><input type="radio" name="board" value="xiao_nrf52840_433">XIAO nRF52840 (433 MHz)<small>Produkt 0xEC · Modell 0xED</small></label>
+      <label class="choice"><input type="radio" name="board" value="xiao_nrf52840" checked>XIAO nRF52840 (868 / 915 MHz)<small data-i18n="board.eu.sub">Produkt 0xEC · Modell 0xEE</small></label>
+      <label class="choice"><input type="radio" name="board" value="xiao_nrf52840_433">XIAO nRF52840 (433 MHz)<small data-i18n="board.433.sub">Produkt 0xEC · Modell 0xED</small></label>
     </div>
-    <p class="meta" id="fwinfo" style="margin-top:12px">Firmware-Stand wird geladen …</p>
+    <p class="meta" id="fwinfo" style="margin-top:12px"></p>
   </div>
 
   <div class="card">
-    <h2>2. Flashen</h2>
+    <h2 data-i18n="h.flash">2. Flashen</h2>
     <div class="choices" id="modes" style="margin-bottom:12px">
-      <label class="choice"><input type="radio" name="mode" value="update" checked>Update<small>nur Firmware, Einstellungen und Identität bleiben</small></label>
-      <label class="choice"><input type="radio" name="mode" value="full">Neu einrichten<small>neuer oder leerer Node, löscht alles</small></label>
+      <label class="choice"><input type="radio" name="mode" value="update" checked><span data-i18n="mode.update">Update</span><small data-i18n="mode.update.sub">nur Firmware, Einstellungen und Identität bleiben</small></label>
+      <label class="choice"><input type="radio" name="mode" value="full"><span data-i18n="mode.full">Neu einrichten</span><small data-i18n="mode.full.sub">neuer oder leerer Node, löscht alles</small></label>
     </div>
 
     <div id="steps-nrf">
       <ol class="steps">
-        <li>Board per USB anstecken. Ein Knopfdruck am Board ist nicht nötig, die Seite schaltet den Update-Modus selbst ein.</li>
-        <li>Auf „Flashen“ klicken und den Port des Boards wählen.</li>
-        <li>Nur beim allerersten Mal verlangt der Browser eine zweite Auswahl, weil sich das Board im Update-Modus als neues USB-Gerät meldet. Dann noch einmal „Flashen“ klicken und den Port wählen.</li>
+        <li data-i18n="flash.s1">Board per USB anstecken. Ein Knopfdruck am Board ist nicht nötig, die Seite schaltet den Update-Modus selbst ein.</li>
+        <li data-i18n="flash.s2">Auf „Flashen“ klicken und den Port des Boards wählen.</li>
+        <li data-i18n="flash.s3">Nur beim allerersten Mal verlangt der Browser eine zweite Auswahl, weil sich das Board im Update-Modus als neues USB-Gerät meldet. Dann noch einmal „Flashen“ klicken und den Port wählen.</li>
       </ol>
       <div class="row">
-        <button id="btn-flash-nrf">Flashen</button>
+        <button id="btn-flash-nrf" data-i18n="btn.flash">Flashen</button>
       </div>
     </div>
 
@@ -97,47 +106,48 @@
   </div>
 
   <div class="card">
-    <h2>3. Nach dem Flashen</h2>
-    <p><strong>Update:</strong> nur Schritt c. Der Firmware-Hash ändert sich mit jeder neuen Firmware und muss danach gesetzt werden.</p>
-    <p><strong>Neu einrichten:</strong> nach dem vollen Flash nur noch b (setzt auch den Hash). Schritt a nur bei einem Node, der vorher schon benutzt wurde. Jeder Schritt fragt den Port neu ab, weil das Board dazwischen neu startet.</p>
+    <h2 data-i18n="h.after">3. Nach dem Flashen</h2>
+    <p data-i18n-html="after.update"><strong>Update:</strong> nur Schritt c. Der Firmware-Hash ändert sich mit jeder neuen Firmware und muss danach gesetzt werden.</p>
+    <p data-i18n-html="after.full"><strong>Neu einrichten:</strong> nach dem vollen Flash nur noch b (setzt auch den Hash). Schritt a nur bei einem Node, der vorher schon benutzt wurde. Jeder Schritt fragt den Port neu ab, weil das Board dazwischen neu startet.</p>
     <div class="row">
-      <button id="btn-wipe" class="secondary">a. EEPROM leeren</button>
-      <button id="btn-provision" class="secondary">b. Einrichten (EEPROM und Hash)</button>
-      <button id="btn-hash">c. Firmware-Hash setzen</button>
-      <button id="btn-inspect" class="secondary">Status prüfen</button>
+      <button id="btn-wipe" class="secondary" data-i18n="btn.wipe">a. EEPROM leeren</button>
+      <button id="btn-provision" class="secondary" data-i18n="btn.provision">b. Einrichten (EEPROM und Hash)</button>
+      <button id="btn-hash" data-i18n="btn.hash">c. Firmware-Hash setzen</button>
+      <button id="btn-inspect" class="secondary" data-i18n="btn.inspect">Status prüfen</button>
     </div>
-    <p class="meta">Das Leeren dauert bis zu 30 Sekunden. Eine Gerätesignatur wird hier nicht erzeugt (wie im rnode-flasher), <code>rnodeconf</code> kann sie deshalb als nicht bestätigt melden.</p>
+    <p class="meta" data-i18n-html="after.note">Das Leeren dauert bis zu 30 Sekunden. Eine Gerätesignatur wird hier nicht erzeugt (wie im rnode-flasher), <code>rnodeconf</code> kann sie deshalb als nicht bestätigt melden.</p>
   </div>
 
   <div class="card">
-    <h2>4. Bluetooth-Pairing</h2>
-    <p>„Pairing starten“ startet das Bluetooth-Pairing und zeigt den PIN. Das Board erzeugt ihn sofort und hält das Pairing 35 Sekunden offen. In dieser Zeit am Smartphone das Board suchen und den PIN eingeben. Solange die Verbindung offen ist, sind Flashen und Einrichten gesperrt.</p>
+    <h2 data-i18n="h.bt">4. Bluetooth</h2>
+    <p data-i18n="bt.intro"></p>
     <div class="row">
-      <button id="btn-bt-pair">Pairing starten</button>
-      <button id="btn-bt-close" class="secondary">Verbindung trennen</button>
-      <button id="btn-bt-off" class="secondary">Bluetooth ausschalten</button>
+      <button id="btn-bt-on" data-i18n="btn.bton"></button>
+      <button id="btn-bt-off" class="secondary" data-i18n="btn.btoff"></button>
+      <button id="btn-bt-pair" data-i18n="btn.btpair"></button>
+      <button id="btn-bt-close" class="secondary" data-i18n="btn.btclose"></button>
     </div>
-    <p id="bt-status" class="meta">Pairing nicht gestartet.</p>
+    <p id="bt-status" class="meta"></p>
     <div id="bt-pin-wrap" class="hidden">
-      <p>Pairing-PIN:</p>
+      <p data-i18n="bt.pin.label">Pairing-PIN:</p>
       <div id="bt-pin" class="pin">------</div>
     </div>
-    <p class="meta">„Verbindung trennen“ lässt Bluetooth am Board eingeschaltet. „Bluetooth ausschalten“ speichert die Abschaltung im Board.</p>
+    <p class="meta" data-i18n="bt.note"></p>
   </div>
 
   <div class="card">
-    <h2>Protokoll</h2>
-    <pre id="log">Bereit.</pre>
+    <h2 data-i18n="h.log">Protokoll</h2>
+    <pre id="log"></pre>
   </div>
 
   <div class="card">
-    <h2>Mehr</h2>
+    <h2 data-i18n="h.more">Mehr</h2>
     <div class="links">
-      <a href="https://github.com/ffuhrnew/uttarajalam">Quellcode</a>
+      <a href="https://github.com/ffuhrnew/uttarajalam" data-i18n="link.src">Quellcode</a>
       <a href="https://github.com/ffuhrnew/uttarajalam/blob/main/README.md">README</a>
-                  <a href="https://github.com/ffuhrnew/uttarajalam/issues">Fehler melden</a>
+      <a href="https://github.com/ffuhrnew/uttarajalam/issues" data-i18n="link.issues">Fehler melden</a>
     </div>
-    <p class="meta" style="margin-top:12px">GPL-3.0. Der Flasher benutzt Code von
+    <p class="meta" style="margin-top:12px" data-i18n-html="footer">GPL-3.0. Der Flasher benutzt Code von
       <a href="https://github.com/liamcottle/rnode-flasher">liamcottle/rnode-flasher</a> (MIT),
       siehe <a href="vendor/THIRD-PARTY.md">THIRD-PARTY.md</a>.
       Die Firmware wird bei jedem Stand von <code>main</code> automatisch gebaut. Flashen geschieht auf eigene Gefahr.</p>

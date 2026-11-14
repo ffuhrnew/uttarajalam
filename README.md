@@ -33,8 +33,11 @@ mit frisch gebauter Firmware über GitHub Pages veröffentlicht:
 2. Beim ersten Mal das EEPROM einrichten: **a. EEPROM leeren**, USB trennen und wieder anstecken, dann
    **b. Einrichten (EEPROM und Hash)**. Bei einem reinen Firmware-Update genügt es, den Hash neu zu setzen.
 3. Mit **Status prüfen** kontrollieren, ob EEPROM und Firmware-Hash stimmen.
-4. Optional **Bluetooth-Pairing**: „Pairing starten“ zeigt einen PIN, der am Smartphone eingegeben wird
-   (das Pairing-Fenster bleibt 35 Sekunden offen). „Bluetooth ausschalten“ schaltet Bluetooth am Board ab.
+4. Optional **Bluetooth**: „Bluetooth einschalten“ und „Bluetooth ausschalten“ speichern den Zustand im Board
+   (nach dem Ausschalten startet die Seite das Board neu, damit es sofort nicht mehr sendet). „Pairing starten“
+   zeigt einen PIN, der am Smartphone eingegeben wird; das Pairing-Fenster bleibt 35 Sekunden offen.
+
+Die Seite gibt es auf Deutsch und Englisch, die Sprache wählst du oben rechts (voreingestellt nach der Browsersprache).
 
 **Wichtig:** Ist ein Smartphone oder Computer per Bluetooth mit dem Board verbunden, antwortet die Firmware nur dort
 und nicht mehr über USB. Dann melden weder der Web-Flasher noch `rnodeconf` eine Antwort. Abhilfe: Bluetooth am
