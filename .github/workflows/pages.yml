@@ -46,7 +46,28 @@ jobs:
           make release-xiao_nrf52840
           mkdir -p site/firmware
           cp Release/rnode_firmware_xiao_nrf52840.zip site/firmware/
-          python3 -c 'import json,subprocess,datetime; print(json.dumps({"version":"1.75","commit":subprocess.check_output(["git","rev-parse","HEAD"]).decode().strip(),"built":datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}))' > site/firmware/manifest.json
+
+      # Heltec LoRa32 V3 (ESP32-S3). Schlägt dieser Bau fehl, wird die Seite trotzdem mit dem XIAO veröffentlicht;
+      # der Flasher bietet nur Boards an, deren Paket entstanden ist (boards-Liste im manifest.json).
+      - name: Build Heltec LoRa32 V3 package
+        continue-on-error: true
+        run: |
+          make prep-esp32
+          make release-heltec32_v3
+          cp Release/rnode_firmware_heltec32v3.zip site/firmware/
+
+      - name: Write manifest
+        run: |
+          python3 - <<'PY'
+          import json, subprocess, datetime, glob, os
+          boards = sorted(os.path.basename(f)[:-4] for f in glob.glob("site/firmware/rnode_firmware_*.zip"))
+          m = {"version": "1.75",
+               "commit": subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip(),
+               "built": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+               "boards": boards}
+          open("site/firmware/manifest.json", "w").write(json.dumps(m))
+          print(m)
+          PY
 
       - uses: actions/configure-pages@v5
 

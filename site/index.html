@@ -80,6 +80,8 @@
     <div class="choices" id="boards">
       <label class="choice"><input type="radio" name="board" value="xiao_nrf52840" checked>XIAO nRF52840 (868 / 915 MHz)<small data-i18n="board.eu.sub">Produkt 0xEC · Modell 0xEE</small></label>
       <label class="choice"><input type="radio" name="board" value="xiao_nrf52840_433">XIAO nRF52840 (433 MHz)<small data-i18n="board.433.sub">Produkt 0xEC · Modell 0xED</small></label>
+      <label class="choice" id="choice-heltec_v3"><input type="radio" name="board" value="heltec_v3">Heltec LoRa32 V3 (868 / 915 MHz)<small data-i18n="board.h3.eu.sub">Produkt 0xC1 · Modell 0xCA · ungetestet</small></label>
+      <label class="choice" id="choice-heltec_v3_433"><input type="radio" name="board" value="heltec_v3_433">Heltec LoRa32 V3 (433 MHz)<small data-i18n="board.h3.433.sub">Produkt 0xC1 · Modell 0xC5 · ungetestet</small></label>
     </div>
     <p class="meta" id="fwinfo" style="margin-top:12px"></p>
   </div>
@@ -89,6 +91,17 @@
     <div class="choices" id="modes" style="margin-bottom:12px">
       <label class="choice"><input type="radio" name="mode" value="update" checked><span data-i18n="mode.update">Update</span><small data-i18n="mode.update.sub">nur Firmware, Einstellungen und Identität bleiben</small></label>
       <label class="choice"><input type="radio" name="mode" value="full"><span data-i18n="mode.full">Neu einrichten</span><small data-i18n="mode.full.sub">neuer oder leerer Node, löscht alles</small></label>
+    </div>
+
+    <div id="steps-esp32" class="hidden">
+      <ol class="steps">
+        <li data-i18n="esp.s1">Board per USB anstecken. Die Seite versucht, den Download-Modus selbst einzuschalten.</li>
+        <li data-i18n="esp.s2">Auf „Flashen“ klicken und den Port des Boards wählen.</li>
+        <li data-i18n="esp.s3">Klappt die Verbindung nicht: USB abziehen, PRG/BOOT-Taste gedrückt halten, USB einstecken, erst dann loslassen, dann nochmal „Flashen“.</li>
+      </ol>
+      <div class="row">
+        <button id="btn-flash-esp32" data-i18n="btn.flash">Flashen</button>
+      </div>
     </div>
 
     <div id="steps-nrf">

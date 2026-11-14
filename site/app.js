@@ -2,10 +2,14 @@
 // aus liamcottle/rnode-flasher (MIT). Texte stehen in i18n.js (Deutsch und Englisch).
 
 import { t, getLang, initLang, setLang, applyStatic } from "./i18n.js";
+import { ESPLoader, Transport } from "./vendor/esptool-js/bundle.js";
 
 const BOARDS = {
   xiao_nrf52840: { kind: "nrf52", product: 0xEC, model: 0xEE, zip: "firmware/rnode_firmware_xiao_nrf52840.zip" },
   xiao_nrf52840_433: { kind: "nrf52", product: 0xEC, model: 0xED, zip: "firmware/rnode_firmware_xiao_nrf52840.zip" },
+  // Heltec LoRa32 V3 (ESP32-S3): Firmware-Paket aus "make release-heltec32_v3". Offsets wie bei rnodeconf.
+  heltec_v3: { kind: "esp32", product: 0xC1, model: 0xCA, zip: "firmware/rnode_firmware_heltec32v3.zip", id: "heltec32v3", chip: "esp32s3", bootloaderOffset: 0x0 },
+  heltec_v3_433: { kind: "esp32", product: 0xC1, model: 0xC5, zip: "firmware/rnode_firmware_heltec32v3.zip", id: "heltec32v3", chip: "esp32s3", bootloaderOffset: 0x0 },
 };
 
 const $ = (id) => document.getElementById(id);
@@ -145,6 +149,103 @@ async function flashNrf() {
   log(t(mode() === "full" ? "log.after.full" : "log.after.update"));
 }
 
+// ---- ESP32 (Heltec V3) -----------------------------------------------------
+
+// Packt das Firmware-Paket (ZIP aus dem Makefile) aus: { Dateiname: Bytes }.
+async function unzipEntries(bytes) {
+  zip.configure({ useWebWorkers: false });
+  const reader = new zip.ZipReader(new zip.Uint8ArrayReader(bytes));
+  const out = {};
+  try {
+    for (const e of await reader.getEntries()) {
+      if (!e.directory) out[e.filename] = await e.getData(new zip.Uint8ArrayWriter());
+    }
+  } finally {
+    await reader.close();
+  }
+  return out;
+}
+
+// esptool-js schreibt die Verbindungsversuche zeichenweise. Das fassen wir zu einer Zeile zusammen.
+function espTerminal() {
+  let pending = "";
+  const flush = () => {
+    const s = pending.replace(/[\r\n]+/g, "").trim();
+    if (s) log(s);
+    pending = "";
+  };
+  return {
+    clean() {},
+    write(x) { pending += x; if (/[\r\n]/.test(x)) flush(); },
+    writeLine(x) { flush(); log(x); },
+    flush,
+  };
+}
+
+async function connectEsp32(port, baudrate) {
+  const terminal = espTerminal();
+  const transport = new Transport(port, false);
+  const loader = new ESPLoader({ transport, baudrate, terminal });
+  log(t("log.attempt") + " …");
+  try {
+    await loader.main("default_reset");
+    terminal.flush();
+    return { transport, loader };
+  } catch (e) {
+    terminal.flush();
+    log(t("log.notconn", { msg: e && e.message ? e.message : e }));
+    try { await transport.disconnect(); } catch (_) { /* schon zu */ }
+  }
+  throw new Error(t("err.noconn"));
+}
+
+async function flashEsp32() {
+  const b = board();
+  const full = mode() === "full";
+  const port = await pickPort();   // zuerst, solange die Klick-Erlaubnis gilt
+  if (full && !confirm(t("confirm.full"))) throw new Error(t("err.cancelled"));
+  const bytes = await fetchBytes(b.zip);
+  log(t("log.zip", { name: b.zip.split("/").pop(), n: bytes.length }));
+  const files = await unzipEntries(bytes);
+  const base = "rnode_firmware_" + b.id;
+  const part = (name) => {
+    if (!files[name]) throw new Error(t("err.badzip", { name }));
+    return files[name];
+  };
+  // Adressen wie bei rnodeconf: Bootloader (ESP32-S3: 0x0), Partitionen, boot_app0, Firmware, Konsole
+  const fileArray = [
+    { address: b.bootloaderOffset, data: toBinaryString(part(base + ".bootloader")) },
+    { address: 0x8000,   data: toBinaryString(part(base + ".partitions")) },
+    { address: 0xe000,   data: toBinaryString(part(base + ".boot_app0")) },
+    { address: 0x10000,  data: toBinaryString(part(base + ".bin")) },
+    { address: 0x210000, data: toBinaryString(part("console_image.bin")) },
+  ];
+  let transport;
+  try {
+    const conn = await connectEsp32(port, 921600);
+    transport = conn.transport;
+    const loader = conn.loader;
+    await loader.writeFlash({
+      fileArray,
+      flashSize: "keep",
+      flashMode: "keep",
+      flashFreq: "keep",
+      eraseAll: full,
+      compress: true,
+      calculateMD5Hash: (image) => CryptoJS.MD5(CryptoJS.enc.Latin1.parse(image)),
+      reportProgress: (i, written, total) => setProgress(Math.floor((written / total) * 100)),
+    });
+    try { await loader.hardReset(); } catch (_) { /* siehe Hinweis unten */ }
+    // DTR/RTS loslassen: bleibt DTR gesetzt, landet der Chip beim nächsten Neustart im Download-Modus.
+    try { await transport.setDTR(false); await transport.setRTS(false); } catch (_) { /* egal */ }
+    log(t("log.nostart"));
+  } finally {
+    if (transport) { try { await transport.disconnect(); } catch (_) { /* Port war schon zu */ } }
+    await releasePort(port);
+  }
+  log(t(full ? "log.after.full" : "log.after.update"));
+}
+
 // ---- Nach dem Flashen ------------------------------------------------------
 
 
@@ -171,9 +272,50 @@ async function openRNodeNrf(port) {
   }
 }
 
+// ESP32: DTR/RTS loslassen (sonst landet das Board beim Neustart im Download-Modus) und notfalls einmal neu starten.
+async function openRNodeEsp32(port) {
+  let raw = [], rawCount = 0;
+  RNode.rawTap = (chunk) => { rawCount += chunk.length; raw.push(...chunk); if (raw.length > 4000) raw = raw.slice(-4000); };
+  const rnode = await withTimeout(RNode.fromSerialPort(port), 8000, t("err.portopen"));
+  const setLines = (dtr, rts) => port.setSignals({ dataTerminalReady: dtr, requestToSend: rts }).catch(() => {});
+  await setLines(false, false);
+  try {
+    // Beim ersten Start nach dem Flashen formatiert die Firmware ihren Speicher: das kann länger dauern.
+    const start = Date.now();
+    let nextNote = 10000;
+    let resetTried = false;
+    while (Date.now() - start < 25000) {
+      if (await rnode.detect()) return rnode;
+      const rom = await Promise.race([rnode.getRom().catch(() => null), sleep(1500).then(() => null)]);
+      if (rom && rom.length >= 0x9c) return rnode;
+      if (!resetTried && Date.now() - start >= 6000) {
+        resetTried = true;
+        log(t("log.noanswer.reset"));
+        await setLines(false, true);
+        await sleep(200);
+        await setLines(false, false);
+        await sleep(1500);
+      }
+      if (Date.now() - start >= nextNote) {
+        log(t("log.waiting", { s: Math.round((Date.now() - start) / 1000), n: rawCount }));
+        nextNote += 10000;
+      }
+      await sleep(500);
+    }
+    const text = new TextDecoder().decode(new Uint8Array(raw)).replace(/[^\x20-\x7e\r\n]/g, "·").trim();
+    log(t("log.received", { n: rawCount, text: text.slice(-800) || t("log.nothing") }));
+    throw new Error(t("err.noanswer"));
+  } catch (e) {
+    await closeQuiet(rnode);
+    throw e;
+  } finally {
+    RNode.rawTap = null;
+  }
+}
+
 async function openRNode(port) {
   port = port || await pickPort();
-  return openRNodeNrf(port);
+  return board().kind === "esp32" ? openRNodeEsp32(port) : openRNodeNrf(port);
 }
 
 // ---- Bluetooth -------------------------------------------------------------
@@ -443,10 +585,32 @@ const renderFwInfo = () => {
   $("fwinfo").textContent = info;
 };
 
+function updateView() {
+  const b = board();
+  $("steps-esp32").classList.toggle("hidden", b.kind !== "esp32");
+  $("steps-nrf").classList.toggle("hidden", b.kind !== "nrf52");
+}
+
+// Boards, deren Firmware beim Bau nicht entstanden ist, werden nicht angeboten.
+function filterBoards(m) {
+  if (!Array.isArray(m.boards)) return;
+  for (const [key, b] of Object.entries(BOARDS)) {
+    const name = b.zip.split("/").pop().replace(/\.zip$/, "");
+    const el = $("choice-" + key);
+    if (el && !m.boards.includes(name)) {
+      el.classList.add("hidden");
+      const input = el.querySelector("input");
+      if (input.checked) document.querySelector('input[name="board"]').checked = true;
+    }
+  }
+  updateView();
+}
+
 async function loadManifest() {
   try {
     const m = await (await fetch("firmware/manifest.json", { cache: "no-cache" })).json();
     fwState = { manifest: m };
+    filterBoards(m);
   } catch (_) {
     fwState = { key: "fw.unknown" };
   }
@@ -476,6 +640,7 @@ if (!("serial" in navigator)) {
   document.querySelectorAll("button").forEach((b) => { if (!b.id.startsWith("lang-")) b.disabled = true; });
 } else {
   $("btn-flash-nrf").onclick = () => run("act.flash", flashNrf);
+  $("btn-flash-esp32").onclick = () => run("act.flash", flashEsp32);
   $("btn-wipe").onclick = () => run("act.wipe", wipeEeprom);
   $("btn-provision").onclick = () => run("act.provision", provisionEeprom);
   $("btn-hash").onclick = () => run("act.hash", setFirmwareHash);
@@ -486,4 +651,6 @@ if (!("serial" in navigator)) {
   $("btn-bt-close").onclick = () => run("act.btclose", bluetoothClose);
   updateButtons();
 }
+document.querySelectorAll('input[name="board"]').forEach((r) => r.addEventListener("change", updateView));
+updateView();
 loadManifest();
