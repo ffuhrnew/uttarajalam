@@ -49,12 +49,24 @@ jobs:
 
       # Heltec LoRa32 V3 (ESP32-S3). Schlägt dieser Bau fehl, wird die Seite trotzdem mit dem XIAO veröffentlicht;
       # der Flasher bietet nur Boards an, deren Paket entstanden ist (boards-Liste im manifest.json).
+      - name: Install ESP32 toolchain
+        id: esp32prep
+        continue-on-error: true
+        run: make prep-esp32
+
       - name: Build Heltec LoRa32 V3 package
+        if: steps.esp32prep.outcome == 'success'
         continue-on-error: true
         run: |
-          make prep-esp32
           make release-heltec32_v3
           cp Release/rnode_firmware_heltec32v3.zip site/firmware/
+
+      - name: Build XIAO ESP32-S3 package
+        if: steps.esp32prep.outcome == 'success'
+        continue-on-error: true
+        run: |
+          make release-xiao_s3
+          cp Release/rnode_firmware_xiao_esp32s3.zip site/firmware/
 
       - name: Write manifest
         run: |

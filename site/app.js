@@ -10,6 +10,9 @@ const BOARDS = {
   // Heltec LoRa32 V3 (ESP32-S3): Firmware-Paket aus "make release-heltec32_v3". Offsets wie bei rnodeconf.
   heltec_v3: { kind: "esp32", product: 0xC1, model: 0xCA, zip: "firmware/rnode_firmware_heltec32v3.zip", id: "heltec32v3", chip: "esp32s3", bootloaderOffset: 0x0 },
   heltec_v3_433: { kind: "esp32", product: 0xC1, model: 0xC5, zip: "firmware/rnode_firmware_heltec32v3.zip", id: "heltec32v3", chip: "esp32s3", bootloaderOffset: 0x0 },
+  // Seeed XIAO ESP32-S3 mit Wio-SX1262 (Paket aus "make release-xiao_s3")
+  xiao_s3: { kind: "esp32", product: 0xEB, model: 0xDD, zip: "firmware/rnode_firmware_xiao_esp32s3.zip", id: "xiao_esp32s3", chip: "esp32s3", bootloaderOffset: 0x0 },
+  xiao_s3_433: { kind: "esp32", product: 0xEB, model: 0xDE, zip: "firmware/rnode_firmware_xiao_esp32s3.zip", id: "xiao_esp32s3", chip: "esp32s3", bootloaderOffset: 0x0 },
 };
 
 const $ = (id) => document.getElementById(id);

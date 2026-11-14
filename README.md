@@ -45,11 +45,12 @@ Gerät ausschalten oder das Board dort vergessen und neu anstecken.
 
 `rnodeconf --autoinstall` kennt das XIAO nRF52840 nicht; dafür ist der Web-Flasher gedacht.
 
-### Heltec LoRa32 V3 (ungetestet)
+### Heltec LoRa32 V3 und XIAO ESP32-S3 (ungetestet)
 
-Der Flasher bietet zusätzlich das **Heltec LoRa32 V3** (ESP32-S3, Produkt `0xC1`, Modelle `0xCA` für 868/915 MHz und
+Der Flasher bietet zusätzlich das **Seeed XIAO ESP32-S3** mit Wio-SX1262 (Produkt `0xEB`, Modelle `0xDD` und `0xDE`,
+`make release-xiao_s3`) sowie das **Heltec LoRa32 V3** (ESP32-S3, Produkt `0xC1`, Modelle `0xCA` für 868/915 MHz und
 `0xC5` für 433 MHz) an. Die Firmware ist die unveränderte RNode_Firmware_CE (`make release-heltec32_v3`), der Flasher
-schreibt sie mit denselben Adressen wie `rnodeconf`. Dieses Board ist noch auf keiner Hardware getestet. Wird das Paket
+schreibt sie mit denselben Adressen wie `rnodeconf`. Beide Boards sind noch nicht auf Hardware getestet. Wird das Paket
 beim Bau nicht erzeugt, bietet die Seite das Board nicht an. Die Schritte danach (Hash, Status, Bluetooth) sind dieselben
 wie beim XIAO. Klappt die USB-Verbindung nicht von selbst, hilft es, die PRG/BOOT-Taste beim Anstecken gedrückt zu halten.
 
